@@ -1,12 +1,16 @@
-const http = require("http");
-http
-  .createServer(function (req, res) {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end(a(req));
-  })
-  .listen(1337, "127.0.0.1");
-console.log("Server running at hhtp://127.0.0.1:1337/");
+/**
+ * メインファイル。
+ * 下記サイトを参考にし、WEBサーバーを構築
+ * ルーティング、レスポンス機能を搭載
+ * https://www.nodebeginner.org/index-jp.html
+ */
+const server = require("./server.js");
+const router = require("./router.js");
+const requestHandlers = require("./requestHandlers.js");
 
-function a(num) {
-  console.log(num);
-}
+const handle = {};
+handle["/"] = requestHandlers.start;
+handle["/start"] = requestHandlers.start;
+handle["/upload"] = requestHandlers.upload;
+
+server.start(router.route, handle);
