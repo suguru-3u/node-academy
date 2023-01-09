@@ -31,6 +31,7 @@ function start(route, handle) {
   }
 
   // createServerでサーザーを立ち上げ、listenのメソッドでサーバーのポート番号を指定する。
+  // .listenでイベント登録が行われて、httpリクエストがされるまで待機する非同期処理になる。
   http.createServer(onRequest).listen(8888);
   console.log("Server has started.");
 }
