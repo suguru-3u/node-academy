@@ -29,3 +29,21 @@ readStream.on("end", () => {
 readStream.on("error", (err) => {
   console.log("error", err);
 });
+
+/**
+ * 出力ストリーム
+ */
+
+const writeFilePath = path.join(__dirname, "write.txt");
+const writeStream = fs.createWriteStream(writeFilePath);
+
+writeStream.write("Good Day!");
+writeStream.end();
+
+readStream.on("error", (err) => {
+  console.log("error", err);
+});
+
+readStream.on("close", () => {
+  console.log("writable stream closed");
+});
