@@ -6,20 +6,39 @@
  * またストリームは全てEventEmitterのインスタンスとなっており、状態の変更がイベントによって通知される。
  */
 
+const path = require("path");
+const fs = require("fs");
+
+const writeFilePath = path.join(__dirname, "write.txt");
+const writeStream = fs.createWriteStream(writeFilePath);
+
+const filePath = path.join(__dirname, "test.txt");
+const readStream = fs.createReadStream(filePath, { bufferSize: 2 });
+readStream.setEncoding("utf8");
+
+/**
+ * 出力ストリーム
+ */
+writeStream.on("error", (err) => {
+  console.log("error", err);
+});
+
+writeStream.on("close", () => {
+  console.log("writable stream closed");
+});
+
+writeStream.on("pipe", () => {
+  console.log("resumed writing");
+});
+
 /**
  * 入力ストリーム
  * ネットワーク、キーボードのイベント、その他ストレージデバイスからのデータ読み込みを司る
  */
+readStream.pipe(writeStream);
 
-const path = require("path");
-const fs = require("fs");
-
-const filePath = path.join("./", "test.txt");
-
-const readStream = fs.createReadStream(filePath, { bufferSize: 2 });
-readStream.setEncoding("utf8");
-readStream.on("data", (data) => {
-  console.log(data);
+readStream.on("data", () => {
+  console.log("read data event");
 });
 
 readStream.on("end", () => {
@@ -28,22 +47,4 @@ readStream.on("end", () => {
 
 readStream.on("error", (err) => {
   console.log("error", err);
-});
-
-/**
- * 出力ストリーム
- */
-
-const writeFilePath = path.join(__dirname, "write.txt");
-const writeStream = fs.createWriteStream(writeFilePath);
-
-writeStream.write("Good Day!");
-writeStream.end();
-
-readStream.on("error", (err) => {
-  console.log("error", err);
-});
-
-readStream.on("close", () => {
-  console.log("writable stream closed");
 });
