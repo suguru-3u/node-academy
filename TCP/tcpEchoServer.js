@@ -1,4 +1,4 @@
-// 1.TCPサーバーの生成
+// 1.TCPサーバーの生成（送信同期版）
 const net = require("net");
 const readline = require("readline");
 
@@ -6,17 +6,47 @@ const server = net.createServer();
 // TCPサーバーの接続最大数を設定
 server.maxConnections = 3;
 
-// クライアントコンストラクト
-function Client(socket) {
-  this.socket = socket;
+// データコンストラクト
+function Data(d) {
+  this.data = d;
+  // タイムアウト済みフラグ
+  this.responded = false;
 }
 
-Client.prototype.writeData = function (d) {
+// クライアントコンストラクト
+/**
+ * ソケット
+ * ソケットは各ネットワーク機器が外部とやりとりする際の窓口のことを指します。
+ * IPアドレスをもとに相手先を特定し、お互いのソケットを窓口としてやりとりを行います。
+ * */
+/**
+ * コンストラクタ
+ * 定義したクラスからオブジェクトを生成し、初期化する際に実行される特殊な初期化用メソッドです。
+ */
+
+function Client(socket) {
+  this.counter = 0;
+  this.socket = socket;
+  this.t_queue = {}; // 未実行のタイマーオブジェクトを格納
+  this.w_queue = []; // 未送信データを格納する配列
+}
+
+Client.prototype.writeData = function (d, id) {
   const socket = this.socket;
-  if (socket.writable) {
-    const key = socket.remoteAddress + ":" + socket.remoePort;
-    process.stdout.write("[" + key + "] -" + d);
-    socket.write("[R]" + d);
+  const t_queue = this.t_queue;
+  const w_queue = this.w_queue;
+  // 送信データが一番最初の未送信データであった場合に継続する
+  if (w_queue[0].data !== d) return;
+  // 頭から順番にタイムアウトが過ぎているデータを送信する
+  while (w_queue[0] && w_queue[0].responded) {
+    const w_data = w_queue.shift().data;
+    if (socket.writable) {
+      const key = socket.remoteAddress + ":" + socket.remoePort;
+      process.stdout.write("[" + key + "] -" + w_data);
+      socket.write("[R]" + w_data, () => {
+        delete this.t_queue[id];
+      });
+    }
   }
 };
 
@@ -28,7 +58,6 @@ server.on("connection", (socket) => {
   const key = socket.remoteAddress + ":" + socket.remotePort;
   console.log("Connection start(" + status + ") - " + key);
   clients[key] = new Client(socket);
-  //   console.log("データの確認", clients[key]);
 });
 
 // クライアント接続のイベント2
@@ -38,10 +67,21 @@ server.on("connection", (socket) => {
   const newLine = /\r\n|\n/;
   // 改行コードが送られるまで溜めておく
   socket.on("data", (chunk) => {
+    function writeDataDelayed(key, d) {
+      const client = clients[key];
+      const d_obj = new Data(d);
+      client.w_queue.push(d_obj);
+      const tmout = setTimeout(() => {
+        // タイムアウト済みフラグを変更する
+        d_obj.responded = true;
+        client.writeData(d_obj.data, client.counter);
+      }, Math.random() * 10 * 1000);
+      client.t_queue[client.counter++] = tmout;
+    }
     data += chunk.toString();
     const key = socket.remoteAddress + ":" + socket.remotePort;
     if (newLine.test(data)) {
-      clients[key].writeData(data);
+      writeDataDelayed(key, data);
       data = "";
     }
   });
@@ -75,7 +115,11 @@ rl.on("SIGINT", () => {
   // 全てのソケットを終了する
   for (let i in clients) {
     let socket = clients[i].socket;
+    let t_queue = clients[i].t_queue;
     socket.end();
+    for (let id in t_queue) {
+      clearTimeout(t_queue[id]);
+    }
   }
   server.close();
   rl.close();
