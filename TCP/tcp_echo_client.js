@@ -31,15 +31,31 @@ rl.on("SIGINT", () => {
 let i = 0;
 client.setTimeout(1000);
 client.on("timeout", () => {
-  const str = i + " : Hello World\n";
-  process.stdout.write("[S]" + str);
-  client.write(str);
-  i += 1;
+  let str = "";
+  // 2万個の文字列を連結して送信データを大きくする。
+  for (let i = 0; i < 20000; i++) {
+    str += "Hello World";
+  }
+  str += "\n";
+  const ret = client.write(str);
+  // if (!ret) {
+  //   client.setTimeout(0);
+  // }
+  // 返り値、書き込みバイト数、バッファサイズを出力する
+  process.stdout.write(
+    "write: " +
+      ret +
+      ", " +
+      client.bytesWritten +
+      "bytesWritten, bufferSize: " +
+      client.bufferSize +
+      "byte"
+  );
 });
 
 // Echoバックされてきたデータを標準出力に表示
-client.on("data", (chunk) => {
-  process.stdout.write(chunk.toString());
+client.on("drain", () => {
+  console.log("drain emitted");
 });
 
 // クライアントソケット終了時のイベント
