@@ -60,15 +60,15 @@ function parseJSONAyncPromise(json) {
   });
 }
 
-const toBeFulfilled = parseJSONAyncPromise({ foo: 1 });
-const toBeRejected = parseJSONAyncPromise("不正なjson");
+const toBeFulfilled = parseJSONAyncPromise('{ "foo": 1 }');
+// const toBeRejected = parseJSONAyncPromise("不正なjson");
 console.log("******Promise生成直後******");
 console.log(toBeFulfilled);
-console.log(toBeRejected);
+// console.log(toBeRejected);
 setTimeout(() => {
   console.log("******1秒後******");
   console.log(toBeFulfilled);
-  console.log(toBeRejected);
+  // console.log(toBeRejected);
 }, 1000);
 
 // -- 実行ログ --
@@ -78,3 +78,51 @@ setTimeout(() => {
 // 1秒追加
 // undefined:1
 // [object Object]
+
+function ayncHello() {
+  return new Promise((resolve, reject) => {
+    try {
+      resolve("Hello");
+    } catch {
+      reject("Error");
+    }
+  });
+}
+
+const res = ayncHello();
+console.log(res);
+setTimeout(() => {
+  res
+    .then((res) => console.log(res + " :こんにちわ"))
+    .then((res) => console.log(res + " :ニーハオ"))
+    .then((res) => console.log(res + " :本ジョール"))
+    .catch("Error");
+}, 1000);
+
+function promiseAll1() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("1秒");
+    }, 1000);
+  });
+}
+
+function promiseAll2() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("2秒");
+    }, 2000);
+  });
+}
+function promiseAll3() {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve("3秒");
+    }, 3000);
+  });
+}
+
+Promise.all([promiseAll1(), promiseAll2(), promiseAll3()]).then((data) => {
+  console.log(data);
+  console.log("全ての処理が完了");
+});
